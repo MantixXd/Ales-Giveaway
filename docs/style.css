@@ -518,59 +518,77 @@ button:active:not(:disabled) { transform: translateY(0); }
 .platform-badge.twitch { background: rgba(145, 71, 255, 0.2); color: var(--twitch); }
 .platform-badge.kick { background: rgba(83, 252, 24, 0.15); color: var(--kick); }
 
-/* Participants header with export button */
-.participants-header {
+/* Participants toolbar */
+.participants-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 12px;
+    gap: 12px;
 }
 
-.participants-header h2 {
+.participants-toolbar h2 {
     margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 9px;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.search-wrapper input {
+    padding: 6px 10px 6px 30px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 0.78rem;
+    outline: none;
+    width: 150px;
+    transition: all 0.2s ease;
+}
+
+.search-wrapper input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+    width: 200px;
+}
+
+.search-wrapper input::placeholder {
+    color: var(--text-muted);
 }
 
 .btn-export {
     background: var(--surface3);
     color: var(--text-dim);
     border: 1px solid var(--border);
-    padding: 5px 12px;
-    font-size: 0.7rem;
+    padding: 6px 12px;
+    font-size: 0.68rem;
     font-weight: 600;
     border-radius: var(--radius-sm);
-    text-transform: none;
-    letter-spacing: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
 }
 
 .btn-export:hover:not(:disabled) {
     background: var(--border);
     color: var(--text);
-}
-
-/* Participant search */
-.participant-search {
-    margin-bottom: 10px;
-}
-
-.participant-search input {
-    width: 100%;
-    padding: 8px 12px;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-size: 0.82rem;
-    outline: none;
-    transition: border-color 0.15s ease;
-}
-
-.participant-search input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px var(--accent-glow);
-}
-
-.participant-search input::placeholder {
-    color: var(--text-muted);
 }
 
 /* Sortable headers */
