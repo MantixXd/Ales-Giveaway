@@ -30,6 +30,20 @@ function saveConfig(cfg) {
     localStorage.setItem("giveaway_config", JSON.stringify(cfg));
 }
 
+const DEFAULT_BLACKLIST = ["StreamElements", "Nightbot", "Moobot"];
+
+function loadBlacklist() {
+    try {
+        const raw = localStorage.getItem("giveaway_blacklist");
+        if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return [...DEFAULT_BLACKLIST];
+}
+
+function saveBlacklist(list) {
+    localStorage.setItem("giveaway_blacklist", JSON.stringify(list));
+}
+
 // ---- Weight calculation ----
 function calculateWeight(isSubscriber, subMonths, cfg) {
     if (!isSubscriber) return cfg.non_sub_weight;
@@ -133,6 +147,12 @@ class GiveawayEngine {
 
         const key = entry.platform + ":" + entry.user_id;
         if (this.participants.has(key)) return; // duplicate
+
+        // Blacklist check
+        const bl = this.blacklist || [];
+        const nameLower = (entry.username || "").toLowerCase();
+        const displayLower = (entry.display_name || "").toLowerCase();
+        if (bl.some(b => b === nameLower || b === displayLower)) return;
 
         if (!entry.is_subscriber && !this.config.allow_non_subs) return;
 
@@ -454,6 +474,9 @@ const inputLinearMultiplier = document.getElementById("input-linear-multiplier")
 const linearMultiplierField = document.getElementById("linear-multiplier-field");
 const weightPreview = document.getElementById("weight-preview");
 const btnSaveConfig = document.getElementById("btn-save-config");
+const blacklistInput = document.getElementById("blacklist-input");
+const btnBlacklistAdd = document.getElementById("btn-blacklist-add");
+const blacklistTags = document.getElementById("blacklist-tags");
 
 const btnExportCsv = document.getElementById("btn-export-csv");
 const participantSearch = document.getElementById("participant-search");
@@ -487,6 +510,7 @@ let searchFilter = "";
 
 // Instances
 const engine = new GiveawayEngine();
+engine.blacklist = loadBlacklist().map(n => n.toLowerCase());
 const twitchConn = new TwitchConnector();
 const kickConn = new KickConnector();
 
@@ -1006,6 +1030,54 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+// ---- Blacklist UI ----
+function renderBlacklist() {
+    const bl = loadBlacklist();
+    blacklistTags.innerHTML = "";
+    for (const name of bl) {
+        const tag = document.createElement("span");
+        tag.className = "blacklist-tag";
+        tag.innerHTML = `${escapeHtml(name)}<span class="remove-tag" data-name="${escapeHtml(name)}">&times;</span>`;
+        blacklistTags.appendChild(tag);
+    }
+}
+
+function addToBlacklist(name) {
+    const bl = loadBlacklist();
+    const lower = name.toLowerCase().trim();
+    if (!lower || bl.some(b => b.toLowerCase() === lower)) return;
+    bl.push(name.trim());
+    saveBlacklist(bl);
+    engine.blacklist = bl.map(n => n.toLowerCase());
+    renderBlacklist();
+}
+
+function removeFromBlacklist(name) {
+    let bl = loadBlacklist();
+    bl = bl.filter(b => b.toLowerCase() !== name.toLowerCase());
+    saveBlacklist(bl);
+    engine.blacklist = bl.map(n => n.toLowerCase());
+    renderBlacklist();
+}
+
+btnBlacklistAdd.addEventListener("click", () => {
+    addToBlacklist(blacklistInput.value);
+    blacklistInput.value = "";
+});
+
+blacklistInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        addToBlacklist(blacklistInput.value);
+        blacklistInput.value = "";
+    }
+});
+
+blacklistTags.addEventListener("click", (e) => {
+    if (e.target.classList.contains("remove-tag")) {
+        removeFromBlacklist(e.target.dataset.name);
+    }
+});
+
 // ---- Sorting ----
 document.querySelectorAll(".sortable").forEach(th => {
     th.addEventListener("click", () => {
@@ -1163,6 +1235,7 @@ function connectChannels(cfg) {
 
     updateKeywordDisplay(cfg.keyword);
     renderChannels();
+    renderBlacklist();
     updateWeightModeUI();
     updateUI("IDLE");
 

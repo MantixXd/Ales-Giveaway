@@ -511,6 +511,79 @@ button:active:not(:disabled) { transform: translateY(0); }
 .twitch-label { color: var(--twitch); }
 .kick-label { color: var(--kick); }
 
+/* Blacklist */
+.blacklist-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.blacklist-input-row input {
+    flex: 1;
+    padding: 8px 12px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.blacklist-input-row input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.blacklist-input-row input::placeholder {
+    color: var(--text-muted);
+}
+
+.btn-blacklist-add {
+    background: var(--surface3);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.btn-blacklist-add:hover:not(:disabled) {
+    background: var(--border);
+    color: var(--text);
+}
+
+.blacklist-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.blacklist-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--red);
+}
+
+.blacklist-tag .remove-tag {
+    cursor: pointer;
+    opacity: 0.6;
+    font-size: 0.85rem;
+    line-height: 1;
+    transition: opacity 0.15s;
+}
+
+.blacklist-tag .remove-tag:hover {
+    opacity: 1;
+}
+
 /* Save button */
 .btn-save {
     background: var(--accent);
