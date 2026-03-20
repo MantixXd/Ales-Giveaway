@@ -9,12 +9,12 @@ const DEFAULT_CONFIG = {
     kick_enabled: true,
     kick_channel_slug: "",
     kick_chatroom_id: null,
-    keyword: "!giveaway",
+    keyword: "",
     allow_non_subs: true,
     non_sub_weight: 1.0,
     sub_weight_mode: "logarithmic",
     sub_constant_weight: 2.0,
-    sub_log_multiplier: 1.0,
+    sub_log_exponent: 1.0,
     sub_linear_multiplier: 1.0,
 };
 
@@ -51,7 +51,8 @@ function calculateWeight(isSubscriber, subMonths, cfg) {
     if (mode === "linear") return 1.0 + (cfg.sub_linear_multiplier || 1.0) * subMonths;
     if (mode === "constant") return cfg.sub_constant_weight || 2.0;
     // logarithmic (default)
-    return 1.0 + (cfg.sub_log_multiplier || 1.0) * Math.log2(subMonths + 1);
+    const logVal = Math.log2(subMonths + 1);
+    return 1.0 + Math.pow(logVal, cfg.sub_log_exponent || 1.0);
 }
 
 // ---- Giveaway Engine ----
@@ -468,8 +469,8 @@ const inputNonSubWeight = document.getElementById("input-non-sub-weight");
 const inputSubWeightMode = document.getElementById("input-sub-weight-mode");
 const inputSubConstantWeight = document.getElementById("input-sub-constant-weight");
 const constantWeightField = document.getElementById("constant-weight-field");
-const inputLogMultiplier = document.getElementById("input-log-multiplier");
-const logMultiplierField = document.getElementById("log-multiplier-field");
+const inputLogExponent = document.getElementById("input-log-exponent");
+const logExponentField = document.getElementById("log-exponent-field");
 const inputLinearMultiplier = document.getElementById("input-linear-multiplier");
 const linearMultiplierField = document.getElementById("linear-multiplier-field");
 const weightPreview = document.getElementById("weight-preview");
@@ -684,7 +685,7 @@ function updateKeywordDisplay(keyword) {
 function updateWeightModeUI() {
     const mode = inputSubWeightMode.value;
     constantWeightField.style.display = mode === "constant" ? "" : "none";
-    logMultiplierField.style.display = mode === "logarithmic" ? "" : "none";
+    logExponentField.style.display = mode === "logarithmic" ? "" : "none";
     linearMultiplierField.style.display = mode === "linear" ? "" : "none";
     updateWeightPreview();
 }
@@ -693,7 +694,7 @@ function updateWeightPreview() {
     const mode = inputSubWeightMode.value;
     const nonSub = parseFloat(inputNonSubWeight.value) || 1.0;
     const constW = parseFloat(inputSubConstantWeight.value) || 2.0;
-    const logMul = parseFloat(inputLogMultiplier.value) || 1.0;
+    const logExp = parseFloat(inputLogExponent.value) || 1.0;
     const linMul = parseFloat(inputLinearMultiplier.value) || 1.0;
 
     const examples = [1, 3, 6, 12, 24, 48];
@@ -701,7 +702,7 @@ function updateWeightPreview() {
 
     for (const m of examples) {
         let w;
-        if (mode === "logarithmic") w = 1.0 + logMul * Math.log2(m + 1);
+        if (mode === "logarithmic") w = 1.0 + Math.pow(Math.log2(m + 1), logExp);
         else if (mode === "linear") w = 1.0 + linMul * m;
         else w = constW;
         lines.push(`${m}mo\u00a0=\u00a0${w.toFixed(1)}x`);
@@ -722,7 +723,7 @@ function drawWeightChart() {
     const mode = inputSubWeightMode.value;
     const nonSub = parseFloat(inputNonSubWeight.value) || 1.0;
     const constW = parseFloat(inputSubConstantWeight.value) || 2.0;
-    const logMul = parseFloat(inputLogMultiplier.value) || 1.0;
+    const logExp = parseFloat(inputLogExponent.value) || 1.0;
     const linMul = parseFloat(inputLinearMultiplier.value) || 1.0;
 
     const maxMonths = 60;
@@ -731,7 +732,7 @@ function drawWeightChart() {
 
     for (let m = 0; m <= maxMonths; m++) {
         let w;
-        if (mode === "logarithmic") w = 1.0 + logMul * Math.log2(m + 1);
+        if (mode === "logarithmic") w = 1.0 + Math.pow(Math.log2(m + 1), logExp);
         else if (mode === "linear") w = 1.0 + linMul * m;
         else w = constW;
         points.push({ m, w });
@@ -925,7 +926,7 @@ function updateStats() {
 inputSubWeightMode.addEventListener("change", updateWeightModeUI);
 inputNonSubWeight.addEventListener("input", updateWeightPreview);
 inputSubConstantWeight.addEventListener("input", updateWeightPreview);
-inputLogMultiplier.addEventListener("input", updateWeightPreview);
+inputLogExponent.addEventListener("change", updateWeightPreview);
 inputLinearMultiplier.addEventListener("input", updateWeightPreview);
 
 
@@ -1164,7 +1165,7 @@ btnSaveConfig.addEventListener("click", () => {
         non_sub_weight: parseFloat(inputNonSubWeight.value) || 1.0,
         sub_weight_mode: inputSubWeightMode.value,
         sub_constant_weight: parseFloat(inputSubConstantWeight.value) || 2.0,
-        sub_log_multiplier: parseFloat(inputLogMultiplier.value) || 1.0,
+        sub_log_exponent: parseFloat(inputLogExponent.value) || 1.0,
         sub_linear_multiplier: parseFloat(inputLinearMultiplier.value) || 1.0,
     };
 
@@ -1230,7 +1231,7 @@ function connectChannels(cfg) {
     inputNonSubWeight.value = cfg.non_sub_weight ?? 1.0;
     inputSubWeightMode.value = cfg.sub_weight_mode || "logarithmic";
     inputSubConstantWeight.value = cfg.sub_constant_weight ?? 2.0;
-    inputLogMultiplier.value = cfg.sub_log_multiplier ?? 1.0;
+    inputLogExponent.value = parseFloat(cfg.sub_log_exponent ?? 1.0).toFixed(1);
     inputLinearMultiplier.value = cfg.sub_linear_multiplier ?? 1.0;
 
     updateKeywordDisplay(cfg.keyword);
