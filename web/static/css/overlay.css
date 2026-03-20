@@ -1,0 +1,300 @@
+:root {
+    --accent: #9147ff;
+    --kick: #53fc18;
+    --gold: #ffd700;
+    --reel-bg: rgba(14, 14, 16, 0.92);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: transparent;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #fff;
+    overflow: hidden;
+}
+
+/* Status bar */
+.status-bar {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(14, 14, 16, 0.85);
+    border-radius: 8px;
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: opacity 0.3s;
+    min-width: 200px;
+}
+
+.status-bar.hidden { opacity: 0; pointer-events: none; }
+
+.status-bar .state {
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.status-bar .state.open { color: #00c853; }
+.status-bar .state.closed { color: #ff9800; }
+.status-bar .state.drawn { color: var(--accent); }
+
+.status-bar .count {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.status-bar .keyword {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Recent entries ticker */
+.ticker {
+    position: fixed;
+    bottom: 70px;
+    left: 20px;
+    width: 320px;
+}
+
+.ticker-entry {
+    background: rgba(14, 14, 16, 0.75);
+    border-radius: 6px;
+    padding: 6px 12px;
+    margin-bottom: 4px;
+    font-size: 0.8rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    animation: slide-in 0.3s ease-out;
+    display: flex;
+    justify-content: space-between;
+}
+
+.ticker-entry .user { font-weight: 600; }
+.ticker-entry .weight { color: rgba(255, 255, 255, 0.5); }
+
+@keyframes slide-in {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* ===== CS2-STYLE REEL ===== */
+
+.reel-wrapper {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 85vw;
+    max-width: 1000px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.reel-wrapper.active {
+    opacity: 1;
+}
+
+.reel-wrapper.fade-out {
+    opacity: 0;
+    transition: opacity 0.8s ease;
+}
+
+.reel-container {
+    position: relative;
+    width: 100%;
+    height: 90px;
+    overflow: hidden;
+    border-radius: 6px;
+    background: var(--reel-bg);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Edge fade gradients */
+.reel-container::before,
+.reel-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 100px;
+    height: 100%;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.reel-container::before {
+    left: 0;
+    background: linear-gradient(to right, var(--reel-bg), transparent);
+}
+
+.reel-container::after {
+    right: 0;
+    background: linear-gradient(to left, var(--reel-bg), transparent);
+}
+
+/* Center marker */
+.reel-marker {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 3px;
+    height: 100%;
+    background: var(--gold);
+    z-index: 10;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.5), 0 0 30px rgba(255, 215, 0, 0.2);
+}
+
+.reel-marker::before,
+.reel-marker::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+}
+
+.reel-marker::before {
+    top: -1px;
+    border-top: 12px solid var(--gold);
+}
+
+.reel-marker::after {
+    bottom: -1px;
+    border-bottom: 12px solid var(--gold);
+}
+
+/* Strip */
+.reel-strip {
+    display: flex;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    will-change: transform;
+}
+
+.reel-card {
+    flex-shrink: 0;
+    width: 160px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.85);
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+    padding: 0 10px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 3px solid transparent;
+}
+
+/* CS2 rarity colors */
+.reel-card.rarity-blue {
+    border-bottom-color: #4b69ff;
+    color: #8fa3ff;
+    background: rgba(75, 105, 255, 0.1);
+}
+.reel-card.rarity-purple {
+    border-bottom-color: #8847ff;
+    color: #b48aff;
+    background: rgba(136, 71, 255, 0.1);
+}
+.reel-card.rarity-pink {
+    border-bottom-color: #d32ce6;
+    color: #e478f0;
+    background: rgba(211, 44, 230, 0.1);
+}
+.reel-card.rarity-red {
+    border-bottom-color: #eb4b4b;
+    color: #f28a8a;
+    background: rgba(235, 75, 75, 0.1);
+}
+
+/* Winner = gold (Knife/Gloves) */
+.reel-card.rarity-gold {
+    border-bottom-color: var(--gold);
+    color: var(--gold);
+    background: rgba(255, 215, 0, 0.12);
+}
+
+.reel-card.winner-reveal {
+    background: rgba(255, 215, 0, 0.2);
+    color: var(--gold);
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    border-bottom: 4px solid var(--gold);
+    box-shadow: inset 0 0 30px rgba(255, 215, 0, 0.1);
+    animation: winner-card-glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes winner-card-glow {
+    from { background: rgba(255, 215, 0, 0.15); }
+    to { background: rgba(255, 215, 0, 0.3); }
+}
+
+/* ===== WINNER ANNOUNCEMENT ===== */
+
+.winner-overlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    text-align: center;
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.winner-overlay.visible {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+.winner-overlay .label {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 8px;
+}
+
+.winner-overlay .name {
+    font-size: 3.5rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--accent), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 40px rgba(145, 71, 255, 0.4);
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+.winner-overlay .platform {
+    font-size: 0.85rem;
+    margin-top: 6px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.winner-overlay .sub-info {
+    font-size: 0.8rem;
+    margin-top: 4px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+@keyframes glow {
+    from { filter: brightness(1); }
+    to { filter: brightness(1.3); }
+}

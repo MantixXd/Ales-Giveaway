@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giveaway Tool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <span id="status-dot" class="status-dot"></span>
+            <h1>Giveaway Tool</h1>
+            <span id="state-label" class="state-badge">IDLE</span>
+        </div>
+
+        <!-- Connected Channels -->
+        <div class="channels-bar" id="channels-bar"></div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="value" id="participant-count">0</div>
+                <div class="label">Participants</div>
+            </div>
+            <div class="stat-card">
+                <div class="value keyword-value" id="keyword-display">!giveaway</div>
+                <div class="label">Keyword</div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-card">
+            <div class="controls">
+                <button id="btn-start" class="btn-start">Start</button>
+                <button id="btn-stop" class="btn-stop" disabled>Stop</button>
+                <button id="btn-draw" class="btn-draw" disabled>Draw</button>
+                <button id="btn-reset" class="btn-reset" disabled>Reset</button>
+            </div>
+        </div>
+
+        <!-- Winner display -->
+        <div class="winner-display" id="winner-display">
+            <h2>Winner</h2>
+            <div class="cp-reel-wrapper" id="cp-reel-wrapper">
+                <div class="cp-reel-container" id="cp-reel-container">
+                    <div class="cp-reel-strip" id="cp-reel-strip"></div>
+                    <div class="cp-reel-marker"></div>
+                </div>
+            </div>
+            <div class="winner-name" id="winner-name"></div>
+            <div class="winner-details" id="winner-details"></div>
+        </div>
+
+        <!-- Two-column layout: Settings left, Participants right -->
+        <div class="main-columns">
+            <!-- LEFT: Settings -->
+            <div class="card">
+                <h2 class="settings-toggle" id="settings-toggle">
+                    <span class="chevron" style="transform:rotate(90deg)">&#9654;</span>
+                    Settings
+                </h2>
+                <div class="settings-content open" id="settings-content">
+                    <!-- Channels -->
+                    <div style="margin-bottom: 20px">
+                        <div class="section-label">Channels</div>
+                        <p class="hint" id="channels-hint" style="display:none">Reconnecting...</p>
+                        <div class="config-grid">
+                            <div class="config-field">
+                                <label class="twitch-label">Twitch</label>
+                                <input type="checkbox" class="toggle-input" id="input-twitch-enabled">
+                            </div>
+                            <div class="config-field">
+                                <label>Twitch Channel</label>
+                                <input type="text" id="input-twitch-channel" placeholder="e.g. freezecz">
+                            </div>
+                            <div class="config-field">
+                                <label class="kick-label">Kick</label>
+                                <input type="checkbox" class="toggle-input" id="input-kick-enabled">
+                            </div>
+                            <div class="config-field">
+                                <label>Kick Channel</label>
+                                <input type="text" id="input-kick-channel" placeholder="e.g. freezecz">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Giveaway Settings -->
+                    <div style="margin-bottom: 16px">
+                        <div class="section-label">Giveaway</div>
+                        <div class="config-field" style="margin-bottom:14px">
+                            <label>Keyword</label>
+                            <input type="text" id="input-keyword" value="!giveaway" placeholder="empty = all messages">
+                        </div>
+                        <div class="section-label">Sub Weighting</div>
+                    <canvas id="weight-chart" width="400" height="180"></canvas>
+                    <div class="weight-preview" id="weight-preview"></div>
+
+                    <div class="config-grid" style="margin-top:14px">
+                            <div class="config-field">
+                                <label>Allow Non-Subs</label>
+                                <select id="input-allow-non-subs">
+                                    <option value="true">Yes</option>
+                                    <option value="false">No</option>
+                                </select>
+                            </div>
+                            <div class="config-field">
+                                <label>Non-Sub Weight</label>
+                                <input type="number" id="input-non-sub-weight" value="1.0" min="0" step="0.1">
+                            </div>
+                            <div class="config-field">
+                                <label>Sub Weight Mode</label>
+                                <select id="input-sub-weight-mode">
+                                    <option value="logarithmic">Logarithmic</option>
+                                    <option value="linear">Linear</option>
+                                    <option value="constant">Constant</option>
+                                </select>
+                            </div>
+                            <div class="config-field" id="constant-weight-field" style="display:none">
+                                <label>Constant Weight</label>
+                                <input type="number" id="input-sub-constant-weight" value="2.0" min="0.1" step="0.1">
+                            </div>
+                            <div class="config-field" id="log-multiplier-field" style="display:none">
+                                <label>Log Multiplier</label>
+                                <input type="number" id="input-log-multiplier" value="1.0" min="0.1" step="0.1">
+                            </div>
+                            <div class="config-field" id="linear-multiplier-field" style="display:none">
+                                <label>Linear Multiplier</label>
+                                <input type="number" id="input-linear-multiplier" value="1.0" min="0.1" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="btn-save-config" class="btn-save">Save Settings</button>
+                </div>
+            </div>
+
+            <!-- RIGHT: Participants -->
+            <div class="card participants-card">
+                <h2>Participants</h2>
+                <div class="participant-list">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Platform</th>
+                                <th>User</th>
+                                <th>Sub</th>
+                                <th>Weight</th>
+                            </tr>
+                        </thead>
+                        <tbody id="participant-body"></tbody>
+                    </table>
+                    <div class="empty-state" id="empty-participants">Waiting for participants...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

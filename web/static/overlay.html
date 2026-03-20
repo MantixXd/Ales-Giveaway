@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giveaway Overlay</title>
+    <link rel="stylesheet" href="/static/css/overlay.css">
+</head>
+<body>
+    <!-- Status bar (bottom-left) -->
+    <div class="status-bar hidden" id="status-bar">
+        <div>
+            <span id="overlay-state" class="state">IDLE</span>
+            <span id="overlay-keyword" class="keyword">!giveaway</span>
+        </div>
+        <span id="overlay-count" class="count">0</span>
+    </div>
+
+    <!-- Recent entries ticker -->
+    <div class="ticker" id="ticker"></div>
+
+    <!-- CS2-style reel -->
+    <div class="reel-wrapper" id="reel-wrapper">
+        <div class="reel-container" id="reel-container">
+            <div class="reel-strip" id="reel-strip"></div>
+            <div class="reel-marker"></div>
+        </div>
+    </div>
+
+    <!-- Winner announcement (after reel) -->
+    <div class="winner-overlay" id="winner-overlay">
+        <div class="label">Winner</div>
+        <div class="name" id="overlay-winner-name"></div>
+        <div class="platform" id="overlay-winner-platform"></div>
+        <div class="sub-info" id="overlay-winner-sub"></div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="/static/js/overlay.js"></script>
+</body>
+</html>
