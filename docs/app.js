@@ -441,8 +441,6 @@ const inputTwitchEnabled = document.getElementById("input-twitch-enabled");
 const inputTwitchChannel = document.getElementById("input-twitch-channel");
 const inputKickEnabled = document.getElementById("input-kick-enabled");
 const inputKickChannel = document.getElementById("input-kick-channel");
-const inputKickChatroomId = document.getElementById("input-kick-chatroom-id");
-const kickChatroomIdField = document.getElementById("kick-chatroom-id-field");
 
 const inputKeyword = document.getElementById("input-keyword");
 const inputAllowNonSubs = document.getElementById("input-allow-non-subs");
@@ -793,10 +791,6 @@ inputSubConstantWeight.addEventListener("input", updateWeightPreview);
 inputLogMultiplier.addEventListener("input", updateWeightPreview);
 inputLinearMultiplier.addEventListener("input", updateWeightPreview);
 
-// Show kick chatroom ID field when kick is enabled
-inputKickEnabled.addEventListener("change", () => {
-    kickChatroomIdField.style.display = inputKickEnabled.checked ? "" : "none";
-});
 
 // ---- UI updates ----
 function updateUI(state, keyword) {
@@ -867,7 +861,7 @@ btnSaveConfig.addEventListener("click", () => {
         twitch_channel: inputTwitchChannel.value.trim(),
         kick_enabled: inputKickEnabled.checked,
         kick_channel_slug: inputKickChannel.value.trim(),
-        kick_chatroom_id: parseInt(inputKickChatroomId.value) || null,
+        kick_chatroom_id: null,
         keyword: inputKeyword.value.trim(),
         allow_non_subs: inputAllowNonSubs.value === "true",
         non_sub_weight: parseFloat(inputNonSubWeight.value) || 1.0,
@@ -934,9 +928,6 @@ function connectChannels(cfg) {
     inputTwitchChannel.value = cfg.twitch_channel || "";
     inputKickEnabled.checked = cfg.kick_enabled;
     inputKickChannel.value = cfg.kick_channel_slug || "";
-    inputKickChatroomId.value = cfg.kick_chatroom_id || "";
-    kickChatroomIdField.style.display = cfg.kick_enabled ? "" : "none";
-
     inputKeyword.value = cfg.keyword || "";
     inputAllowNonSubs.value = cfg.allow_non_subs ? "true" : "false";
     inputNonSubWeight.value = cfg.non_sub_weight ?? 1.0;
