@@ -6,7 +6,7 @@
 const DEFAULT_CONFIG = {
     twitch_enabled: true,
     twitch_channel: "",
-    kick_enabled: false,
+    kick_enabled: true,
     kick_channel_slug: "",
     kick_chatroom_id: null,
     keyword: "!giveaway",
@@ -947,7 +947,8 @@ btnExportCsv.addEventListener("click", () => {
         ]);
     }
 
-    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const bom = "\uFEFF"; // UTF-8 BOM for Excel
+    const csv = bom + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
