@@ -455,6 +455,9 @@ const linearMultiplierField = document.getElementById("linear-multiplier-field")
 const weightPreview = document.getElementById("weight-preview");
 const btnSaveConfig = document.getElementById("btn-save-config");
 
+const btnExportCsv = document.getElementById("btn-export-csv");
+const participantSearch = document.getElementById("participant-search");
+
 const cpReelWrapper = document.getElementById("cp-reel-wrapper");
 const cpReelContainer = document.getElementById("cp-reel-container");
 const cpReelStrip = document.getElementById("cp-reel-strip");
@@ -468,6 +471,9 @@ let count = 0;
 let reelTimeout = null;
 let twitchConnected = false;
 let kickConnected = false;
+let sortColumn = null;    // "platform", "name", "sub", "weight", "chance"
+let sortDirection = "asc"; // "asc" or "desc"
+let searchFilter = "";
 
 // Instances
 const engine = new GiveawayEngine();
@@ -823,16 +829,67 @@ function updateEmptyState() {
     }
 }
 
-function addParticipantRow(p) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-        <td><span class="platform-badge ${p.platform}">${p.platform}</span></td>
-        <td>${escapeHtml(p.display_name)}</td>
-        <td>${p.is_subscriber ? p.sub_months + "m" : "-"}</td>
-        <td>${Number(p.weight).toFixed(1)}</td>
-    `;
-    participantBody.prepend(tr);
+function getParticipantsList() {
+    return Array.from(engine.participants.values());
+}
+
+function getTotalWeight() {
+    let total = 0;
+    for (const p of engine.participants.values()) total += p.weight;
+    return total;
+}
+
+function renderParticipantTable() {
+    let list = getParticipantsList();
+    const totalWeight = getTotalWeight();
+
+    // Search filter
+    if (searchFilter) {
+        const q = searchFilter.toLowerCase();
+        list = list.filter(p =>
+            p.display_name.toLowerCase().includes(q) ||
+            p.username.toLowerCase().includes(q) ||
+            p.platform.toLowerCase().includes(q)
+        );
+    }
+
+    // Sort
+    if (sortColumn) {
+        list.sort((a, b) => {
+            let va, vb;
+            switch (sortColumn) {
+                case "platform": va = a.platform; vb = b.platform; break;
+                case "name": va = a.display_name.toLowerCase(); vb = b.display_name.toLowerCase(); break;
+                case "sub": va = a.sub_months; vb = b.sub_months; break;
+                case "weight": va = a.weight; vb = b.weight; break;
+                case "chance": va = a.weight; vb = b.weight; break; // same ordering as weight
+                default: return 0;
+            }
+            if (va < vb) return sortDirection === "asc" ? -1 : 1;
+            if (va > vb) return sortDirection === "asc" ? 1 : -1;
+            return 0;
+        });
+    }
+
+    participantBody.innerHTML = "";
+    for (const p of list) {
+        const chance = totalWeight > 0 ? ((p.weight / totalWeight) * 100) : 0;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><span class="platform-badge ${p.platform}">${p.platform}</span></td>
+            <td>${escapeHtml(p.display_name)}</td>
+            <td>${p.is_subscriber ? p.sub_months + "m" : "-"}</td>
+            <td>${Number(p.weight).toFixed(1)}</td>
+            <td>${chance.toFixed(2)}%</td>
+        `;
+        participantBody.appendChild(tr);
+    }
     updateEmptyState();
+}
+
+function addParticipantRow(p) {
+    // Just re-render the whole table (simple, handles sort/search correctly)
+    renderParticipantTable();
 }
 
 function escapeHtml(str) {
@@ -840,6 +897,65 @@ function escapeHtml(str) {
     div.textContent = str;
     return div.innerHTML;
 }
+
+// ---- Sorting ----
+document.querySelectorAll(".sortable").forEach(th => {
+    th.addEventListener("click", () => {
+        const col = th.dataset.sort;
+        if (sortColumn === col) {
+            sortDirection = sortDirection === "asc" ? "desc" : "asc";
+        } else {
+            sortColumn = col;
+            sortDirection = "asc";
+        }
+
+        // Update header UI
+        document.querySelectorAll(".sortable").forEach(h => {
+            h.classList.remove("sort-active");
+            h.querySelector(".sort-arrow").textContent = "";
+        });
+        th.classList.add("sort-active");
+        th.querySelector(".sort-arrow").textContent = sortDirection === "asc" ? " ▲" : " ▼";
+
+        renderParticipantTable();
+    });
+});
+
+// ---- Search ----
+participantSearch.addEventListener("input", (e) => {
+    searchFilter = e.target.value.trim();
+    renderParticipantTable();
+});
+
+// ---- CSV Export ----
+btnExportCsv.addEventListener("click", () => {
+    const list = getParticipantsList();
+    const totalWeight = getTotalWeight();
+    if (list.length === 0) return;
+
+    const rows = [["Platform", "Username", "Display Name", "Subscriber", "Sub Months", "Weight", "Chance (%)"]];
+    for (const p of list) {
+        const chance = totalWeight > 0 ? ((p.weight / totalWeight) * 100) : 0;
+        rows.push([
+            p.platform,
+            p.username,
+            p.display_name,
+            p.is_subscriber ? "Yes" : "No",
+            p.sub_months,
+            Number(p.weight).toFixed(2),
+            chance.toFixed(4),
+        ]);
+    }
+
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `giveaway_participants_${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+});
 
 // ---- Button handlers ----
 btnStart.addEventListener("click", () => {

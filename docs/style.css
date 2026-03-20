@@ -518,6 +518,88 @@ button:active:not(:disabled) { transform: translateY(0); }
 .platform-badge.twitch { background: rgba(145, 71, 255, 0.2); color: var(--twitch); }
 .platform-badge.kick { background: rgba(83, 252, 24, 0.15); color: var(--kick); }
 
+/* Participants header with export button */
+.participants-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.participants-header h2 {
+    margin-bottom: 0;
+}
+
+.btn-export {
+    background: var(--surface3);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.btn-export:hover:not(:disabled) {
+    background: var(--border);
+    color: var(--text);
+}
+
+/* Participant search */
+.participant-search {
+    margin-bottom: 10px;
+}
+
+.participant-search input {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.participant-search input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.participant-search input::placeholder {
+    color: var(--text-muted);
+}
+
+/* Sortable headers */
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: color 0.15s ease;
+}
+
+.sortable:hover {
+    color: var(--text);
+}
+
+.sortable.sort-active {
+    color: var(--accent);
+}
+
+.sort-arrow {
+    font-size: 0.55rem;
+    margin-left: 2px;
+    opacity: 0.4;
+}
+
+.sortable.sort-active .sort-arrow {
+    opacity: 1;
+    color: var(--accent);
+}
+
 /* Empty state */
 .empty-state {
     text-align: center;

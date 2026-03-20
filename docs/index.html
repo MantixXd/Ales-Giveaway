@@ -141,15 +141,22 @@
 
             <!-- RIGHT: Participants -->
             <div class="card participants-card">
-                <h2>Participants</h2>
+                <div class="participants-header">
+                    <h2>Participants</h2>
+                    <button id="btn-export-csv" class="btn-export" title="Export CSV">&#128190; CSV</button>
+                </div>
+                <div class="participant-search">
+                    <input type="text" id="participant-search" placeholder="Search participants...">
+                </div>
                 <div class="participant-list">
                     <table>
                         <thead>
                             <tr>
-                                <th>Platform</th>
-                                <th>User</th>
-                                <th>Sub</th>
-                                <th>Weight</th>
+                                <th class="sortable" data-sort="platform">Platform <span class="sort-arrow"></span></th>
+                                <th class="sortable" data-sort="name">User <span class="sort-arrow"></span></th>
+                                <th class="sortable" data-sort="sub">Sub <span class="sort-arrow"></span></th>
+                                <th class="sortable" data-sort="weight">Weight <span class="sort-arrow"></span></th>
+                                <th class="sortable" data-sort="chance">Chance <span class="sort-arrow"></span></th>
                             </tr>
                         </thead>
                         <tbody id="participant-body"></tbody>
