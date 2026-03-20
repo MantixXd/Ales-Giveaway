@@ -458,6 +458,16 @@ const btnSaveConfig = document.getElementById("btn-save-config");
 const btnExportCsv = document.getElementById("btn-export-csv");
 const participantSearch = document.getElementById("participant-search");
 
+const statsPanel = document.getElementById("stats-panel");
+const pieCountCanvas = document.getElementById("pie-count");
+const pieChanceCanvas = document.getElementById("pie-chance");
+const pieCountLegend = document.getElementById("pie-count-legend");
+const pieChanceLegend = document.getElementById("pie-chance-legend");
+const statAvgSub = document.getElementById("stat-avg-sub");
+const statLongestSub = document.getElementById("stat-longest-sub");
+const statMaxChance = document.getElementById("stat-max-chance");
+const statNonsubIndividual = document.getElementById("stat-nonsub-individual");
+
 const cpReelWrapper = document.getElementById("cp-reel-wrapper");
 const cpReelContainer = document.getElementById("cp-reel-container");
 const cpReelStrip = document.getElementById("cp-reel-strip");
@@ -499,15 +509,18 @@ engine.onParticipantAdded = (participant, cnt) => {
     count = cnt;
     participantCount.textContent = count;
     addParticipantRow(participant);
+    updateStats();
 };
 
 engine.onWinnerDrawn = (data) => {
     const w = data.winner;
     const names = data.reel_names || [w.display_name];
+    const winChance = data.total_weight > 0 ? (w.weight / data.total_weight * 100) : 0;
     const detailsText =
         `${w.platform.toUpperCase()} | ` +
         (w.is_subscriber ? `Sub ${w.sub_months}mo | ` : "Non-sub | ") +
         `Weight: ${Number(w.weight).toFixed(1)} | ` +
+        `Chance: ${winChance.toFixed(2)}% | ` +
         `${data.total_participants} eligible | ` +
         `Draw #${data.drawn_count}` +
         (data.eligible_remaining > 0 ? ` | ${data.eligible_remaining} left` : "");
@@ -791,6 +804,100 @@ function drawWeightChart() {
     }
 }
 
+// ---- Pie chart helper ----
+function drawPieChart(canvas, slices, colors) {
+    const dpr = window.devicePixelRatio || 1;
+    const size = 100;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    canvas.style.width = size + "px";
+    canvas.style.height = size + "px";
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, size, size);
+
+    const cx = size / 2, cy = size / 2, r = size / 2 - 4;
+    const total = slices.reduce((a, b) => a + b, 0);
+    if (total === 0) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.05)";
+        ctx.fill();
+        return;
+    }
+
+    let startAngle = -Math.PI / 2;
+    for (let i = 0; i < slices.length; i++) {
+        const sliceAngle = (slices[i] / total) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, startAngle, startAngle + sliceAngle);
+        ctx.closePath();
+        ctx.fillStyle = colors[i];
+        ctx.fill();
+        startAngle += sliceAngle;
+    }
+
+    // Center hole (donut)
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim();
+    ctx.fill();
+}
+
+function updateStats() {
+    const list = getParticipantsList();
+    if (list.length === 0) {
+        statsPanel.style.display = "none";
+        return;
+    }
+    statsPanel.style.display = "";
+
+    const subs = list.filter(p => p.is_subscriber);
+    const nonSubs = list.filter(p => !p.is_subscriber);
+    const totalWeight = getTotalWeight();
+    const subWeight = subs.reduce((a, p) => a + p.weight, 0);
+    const nonSubWeight = nonSubs.reduce((a, p) => a + p.weight, 0);
+
+    // Pie: entries count
+    const subColor = "#7c5cfc";
+    const nonSubColor = "#3a3a48";
+    drawPieChart(pieCountCanvas, [subs.length, nonSubs.length], [subColor, nonSubColor]);
+    pieCountLegend.innerHTML =
+        `<span class="pie-legend-item"><span class="pie-legend-dot" style="background:${subColor}"></span>Sub ${subs.length}</span>` +
+        `<span class="pie-legend-item"><span class="pie-legend-dot" style="background:${nonSubColor}"></span>Non-sub ${nonSubs.length}</span>`;
+
+    // Pie: win probability
+    const subChance = totalWeight > 0 ? (subWeight / totalWeight * 100) : 0;
+    const nonSubChance = totalWeight > 0 ? (nonSubWeight / totalWeight * 100) : 0;
+    drawPieChart(pieChanceCanvas, [subWeight, nonSubWeight], [subColor, nonSubColor]);
+    pieChanceLegend.innerHTML =
+        `<span class="pie-legend-item"><span class="pie-legend-dot" style="background:${subColor}"></span>Sub ${subChance.toFixed(1)}%</span>` +
+        `<span class="pie-legend-item"><span class="pie-legend-dot" style="background:${nonSubColor}"></span>Non-sub ${nonSubChance.toFixed(1)}%</span>`;
+
+    // Info stats
+    if (subs.length > 0) {
+        const avgSubMonths = subs.reduce((a, p) => a + p.sub_months, 0) / subs.length;
+        const longestSub = subs.reduce((best, p) => p.sub_months > best.sub_months ? p : best);
+        statAvgSub.textContent = avgSubMonths.toFixed(1) + " mo";
+        statLongestSub.textContent = longestSub.display_name + " (" + longestSub.sub_months + "mo)";
+    } else {
+        statAvgSub.textContent = "-";
+        statLongestSub.textContent = "-";
+    }
+
+    const maxWeightP = list.reduce((best, p) => p.weight > best.weight ? p : best);
+    const maxChance = totalWeight > 0 ? (maxWeightP.weight / totalWeight * 100) : 0;
+    statMaxChance.textContent = maxWeightP.display_name + " (" + maxChance.toFixed(2) + "%)";
+    if (nonSubs.length > 0 && totalWeight > 0) {
+        const individualNonSub = (engine.config.non_sub_weight / totalWeight * 100);
+        statNonsubIndividual.textContent = individualNonSub.toFixed(2) + "%";
+    } else {
+        statNonsubIndividual.textContent = "-";
+    }
+
+}
+
 inputSubWeightMode.addEventListener("change", updateWeightModeUI);
 inputNonSubWeight.addEventListener("input", updateWeightPreview);
 inputSubConstantWeight.addEventListener("input", updateWeightPreview);
@@ -820,6 +927,7 @@ function updateUI(state, keyword) {
         count = 0;
         participantCount.textContent = "0";
         updateEmptyState();
+        statsPanel.style.display = "none";
     }
 }
 
@@ -942,8 +1050,8 @@ btnExportCsv.addEventListener("click", () => {
             p.display_name,
             p.is_subscriber ? "Yes" : "No",
             p.sub_months,
-            Number(p.weight).toFixed(2),
-            chance.toFixed(4),
+            Number(p.weight).toFixed(2).replace(".", ","),
+            chance.toFixed(4).replace(".", ","),
         ]);
     }
 

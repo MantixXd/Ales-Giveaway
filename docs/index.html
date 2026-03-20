@@ -56,6 +56,26 @@
             <div class="winner-details" id="winner-details"></div>
         </div>
 
+        <!-- Statistics -->
+        <div class="stats-panel" id="stats-panel" style="display:none">
+            <div class="stat-pie-card">
+                <canvas id="pie-count" width="120" height="120"></canvas>
+                <div class="pie-legend" id="pie-count-legend"></div>
+                <div class="pie-title">Entries</div>
+            </div>
+            <div class="stat-pie-card">
+                <canvas id="pie-chance" width="120" height="120"></canvas>
+                <div class="pie-legend" id="pie-chance-legend"></div>
+                <div class="pie-title">Win Probability</div>
+            </div>
+            <div class="stat-info-card" id="stat-info-card">
+                <div class="stat-info-row"><span class="stat-label">Avg Sub Length</span><span class="stat-value" id="stat-avg-sub">-</span></div>
+                <div class="stat-info-row"><span class="stat-label">Longest Sub</span><span class="stat-value" id="stat-longest-sub">-</span></div>
+                <div class="stat-info-row"><span class="stat-label">Highest Chance</span><span class="stat-value" id="stat-max-chance">-</span></div>
+                <div class="stat-info-row"><span class="stat-label">Non-Sub Chance</span><span class="stat-value" id="stat-nonsub-individual">-</span></div>
+            </div>
+        </div>
+
         <!-- Two-column layout: Settings left, Participants right -->
         <div class="main-columns">
             <!-- LEFT: Settings -->
