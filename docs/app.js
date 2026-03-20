@@ -941,6 +941,12 @@ function connectChannels(cfg) {
     updateWeightModeUI();
     updateUI("IDLE");
 
+    // Redraw chart after layout is ready
+    setTimeout(drawWeightChart, 100);
+
     // Auto-connect
     connectChannels(cfg);
 })();
+
+// Redraw chart on window resize
+window.addEventListener("resize", drawWeightChart);
