@@ -545,10 +545,7 @@ engine.onWinnerDrawn = (data) => {
         `${w.platform.toUpperCase()} | ` +
         (w.is_subscriber ? `Sub ${w.sub_months}mo | ` : "Non-sub | ") +
         `Weight: ${Number(w.weight).toFixed(1)} | ` +
-        `Chance: ${winChance.toFixed(2)}% | ` +
-        `${data.total_participants} eligible | ` +
-        `Draw #${data.drawn_count}` +
-        (data.eligible_remaining > 0 ? ` | ${data.eligible_remaining} left` : "");
+        `Chance: ${winChance.toFixed(2)}%`;
 
     btnDraw.disabled = true;
 
@@ -650,19 +647,19 @@ function renderChannels() {
 
     if (cfg.twitch_enabled && cfg.twitch_channel) {
         channelsBar.innerHTML += `
-            <div class="channel-tag twitch">
+            <a class="channel-tag twitch" href="https://twitch.tv/${encodeURIComponent(cfg.twitch_channel)}" target="_blank" rel="noopener">
                 <span class="dot ${twitchConnected ? "" : "off"}"></span>
                 <span class="platform">TWITCH</span>
                 <span>${escapeHtml(cfg.twitch_channel)}</span>
-            </div>`;
+            </a>`;
     }
     if (cfg.kick_enabled && cfg.kick_channel_slug) {
         channelsBar.innerHTML += `
-            <div class="channel-tag kick">
+            <a class="channel-tag kick" href="https://kick.com/${encodeURIComponent(cfg.kick_channel_slug)}" target="_blank" rel="noopener">
                 <span class="dot ${kickConnected ? "" : "off"}"></span>
                 <span class="platform">KICK</span>
                 <span>${escapeHtml(cfg.kick_channel_slug)}</span>
-            </div>`;
+            </a>`;
     }
     if (channelsBar.innerHTML === "") {
         channelsBar.innerHTML = `<div class="channel-tag none">No channels configured</div>`;
@@ -870,8 +867,8 @@ function drawPieChart(canvas, slices, colors) {
     ctx.fill();
 }
 
-function updateStats() {
-    const list = getParticipantsList();
+function updateStats(excludeDrawn) {
+    const list = getParticipantsList(excludeDrawn);
     if (list.length === 0) {
         statsPanel.style.display = "none";
         return;
@@ -880,7 +877,7 @@ function updateStats() {
 
     const subs = list.filter(p => p.is_subscriber);
     const nonSubs = list.filter(p => !p.is_subscriber);
-    const totalWeight = getTotalWeight();
+    const totalWeight = getTotalWeight(excludeDrawn);
     const subWeight = subs.reduce((a, p) => a + p.weight, 0);
     const nonSubWeight = nonSubs.reduce((a, p) => a + p.weight, 0);
 
@@ -962,19 +959,27 @@ function updateEmptyState() {
     }
 }
 
-function getParticipantsList() {
-    return Array.from(engine.participants.values());
+function getParticipantsList(excludeDrawn) {
+    const list = [];
+    for (const [key, p] of engine.participants) {
+        if (excludeDrawn && engine.drawnWinners.has(key)) continue;
+        list.push(p);
+    }
+    return list;
 }
 
-function getTotalWeight() {
+function getTotalWeight(excludeDrawn) {
     let total = 0;
-    for (const p of engine.participants.values()) total += p.weight;
+    for (const [key, p] of engine.participants) {
+        if (excludeDrawn && engine.drawnWinners.has(key)) continue;
+        total += p.weight;
+    }
     return total;
 }
 
-function renderParticipantTable() {
-    let list = getParticipantsList();
-    const totalWeight = getTotalWeight();
+function renderParticipantTable(excludeDrawn) {
+    let list = getParticipantsList(excludeDrawn);
+    const totalWeight = getTotalWeight(excludeDrawn);
 
     // Search filter
     if (searchFilter) {
@@ -1146,7 +1151,15 @@ btnStart.addEventListener("click", () => {
 });
 
 btnStop.addEventListener("click", () => engine.stopEntries());
-btnDraw.addEventListener("click", () => engine.drawWinner());
+btnDraw.addEventListener("click", () => {
+    // On redraw: remove previous winners from table and recalculate before drawing
+    if (engine.state === "DRAWN") {
+        renderParticipantTable(true);
+        updateStats(true);
+        participantCount.textContent = getParticipantsList(true).length;
+    }
+    engine.drawWinner();
+});
 btnReset.addEventListener("click", () => engine.reset());
 
 // ---- Save & reconnect ----
