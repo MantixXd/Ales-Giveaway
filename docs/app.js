@@ -474,7 +474,6 @@ const logExponentField = document.getElementById("log-exponent-field");
 const inputLinearMultiplier = document.getElementById("input-linear-multiplier");
 const linearMultiplierField = document.getElementById("linear-multiplier-field");
 const weightPreview = document.getElementById("weight-preview");
-const btnSaveConfig = document.getElementById("btn-save-config");
 const blacklistInput = document.getElementById("blacklist-input");
 const btnBlacklistAdd = document.getElementById("btn-blacklist-add");
 const blacklistTags = document.getElementById("blacklist-tags");
@@ -503,8 +502,6 @@ const settingsContent = document.getElementById("settings-content");
 let currentState = "IDLE";
 let count = 0;
 let reelTimeout = null;
-let twitchConnected = false;
-let kickConnected = false;
 let sortColumn = null;    // "platform", "name", "sub", "weight", "chance"
 let sortDirection = "asc"; // "asc" or "desc"
 let searchFilter = "";
@@ -518,8 +515,11 @@ const kickConn = new KickConnector();
 // Wire connectors to engine
 twitchConn.onMessage = (entry) => engine.handleChatMessage(entry);
 kickConn.onMessage = (entry) => engine.handleChatMessage(entry);
-twitchConn.onStatus = (connected) => { twitchConnected = connected; renderChannels(); };
-kickConn.onStatus = (connected) => { kickConnected = connected; renderChannels(); };
+// Status: "off" | "connecting" | "connected"
+let twitchStatus = "off";
+let kickStatus = "off";
+twitchConn.onStatus = (connected) => { twitchStatus = connected ? "connected" : "off"; renderChannels(); };
+kickConn.onStatus = (connected) => { kickStatus = connected ? "connected" : "off"; renderChannels(); };
 
 // Wire engine callbacks
 engine.onStateChanged = (data) => {
@@ -648,7 +648,7 @@ function renderChannels() {
     if (cfg.twitch_enabled && cfg.twitch_channel) {
         channelsBar.innerHTML += `
             <a class="channel-tag twitch" href="https://twitch.tv/${encodeURIComponent(cfg.twitch_channel)}" target="_blank" rel="noopener">
-                <span class="dot ${twitchConnected ? "" : "off"}"></span>
+                <span class="dot ${twitchStatus}"></span>
                 <span class="platform">TWITCH</span>
                 <span>${escapeHtml(cfg.twitch_channel)}</span>
             </a>`;
@@ -656,7 +656,7 @@ function renderChannels() {
     if (cfg.kick_enabled && cfg.kick_channel_slug) {
         channelsBar.innerHTML += `
             <a class="channel-tag kick" href="https://kick.com/${encodeURIComponent(cfg.kick_channel_slug)}" target="_blank" rel="noopener">
-                <span class="dot ${kickConnected ? "" : "off"}"></span>
+                <span class="dot ${kickStatus}"></span>
                 <span class="platform">KICK</span>
                 <span>${escapeHtml(cfg.kick_channel_slug)}</span>
             </a>`;
@@ -1147,6 +1147,9 @@ btnExportCsv.addEventListener("click", () => {
 // ---- Button handlers ----
 btnStart.addEventListener("click", () => {
     const keyword = inputKeyword.value.trim();
+    // Reconnect channels on start
+    const cfg = collectConfig();
+    connectChannels(cfg);
     engine.start(keyword);
 });
 
@@ -1162,11 +1165,11 @@ btnDraw.addEventListener("click", () => {
 });
 btnReset.addEventListener("click", () => engine.reset());
 
-// ---- Save & reconnect ----
-btnSaveConfig.addEventListener("click", () => {
-    const oldCfg = { ...engine.config };
+// ---- Auto-save ----
+let _channelDebounce = null;
 
-    const cfg = {
+function collectConfig() {
+    return {
         ...engine.config,
         twitch_enabled: inputTwitchEnabled.checked,
         twitch_channel: inputTwitchChannel.value.trim(),
@@ -1181,51 +1184,70 @@ btnSaveConfig.addEventListener("click", () => {
         sub_log_exponent: parseFloat(inputLogExponent.value) || 1.0,
         sub_linear_multiplier: parseFloat(inputLinearMultiplier.value) || 1.0,
     };
+}
 
+function autoSave({ reconnect = false } = {}) {
+    const oldCfg = { ...engine.config };
+    const cfg = collectConfig();
     engine.config = cfg;
     saveConfig(cfg);
-
-    // Update keyword display
     updateKeywordDisplay(cfg.keyword);
-
-    // Reconnect if channel settings changed
-    const channelsChanged =
-        oldCfg.twitch_enabled !== cfg.twitch_enabled ||
-        oldCfg.twitch_channel !== cfg.twitch_channel ||
-        oldCfg.kick_enabled !== cfg.kick_enabled ||
-        oldCfg.kick_channel_slug !== cfg.kick_channel_slug ||
-        oldCfg.kick_chatroom_id !== cfg.kick_chatroom_id;
-
-    if (channelsChanged) {
-        connectChannels(cfg);
-        const hint = document.getElementById("channels-hint");
-        hint.style.display = "";
-        setTimeout(() => { hint.style.display = "none"; }, 3000);
-    }
-
+    updateWeightPreview();
     renderChannels();
 
-    btnSaveConfig.textContent = "Saved!";
-    btnSaveConfig.classList.add("saved");
-    setTimeout(() => {
-        btnSaveConfig.textContent = "Save Settings";
-        btnSaveConfig.classList.remove("saved");
-    }, 1500);
-});
+    if (reconnect) {
+        const channelsChanged =
+            oldCfg.twitch_enabled !== cfg.twitch_enabled ||
+            oldCfg.twitch_channel !== cfg.twitch_channel ||
+            oldCfg.kick_enabled !== cfg.kick_enabled ||
+            oldCfg.kick_channel_slug !== cfg.kick_channel_slug;
+        if (channelsChanged) {
+            connectChannels(cfg);
+            const hint = document.getElementById("channels-hint");
+            hint.style.display = "";
+            setTimeout(() => { hint.style.display = "none"; }, 3000);
+        }
+    }
+}
+
+function autoSaveWithReconnect() {
+    clearTimeout(_channelDebounce);
+    _channelDebounce = setTimeout(() => autoSave({ reconnect: true }), 800);
+}
+
+// Instant save for non-channel inputs
+[inputKeyword, inputAllowNonSubs, inputNonSubWeight, inputSubWeightMode,
+ inputSubConstantWeight, inputLogExponent, inputLinearMultiplier
+].forEach(el => el.addEventListener("input", () => autoSave()));
+inputAllowNonSubs.addEventListener("change", () => autoSave());
+inputSubWeightMode.addEventListener("change", () => autoSave());
+inputLogExponent.addEventListener("change", () => autoSave());
+
+// Channel inputs — save only, reconnect happens on Start
+inputTwitchChannel.addEventListener("input", () => autoSave());
+inputKickChannel.addEventListener("input", () => autoSave());
+inputTwitchEnabled.addEventListener("change", () => autoSave());
+inputKickEnabled.addEventListener("change", () => autoSave());
 
 // ---- Connect channels ----
 function connectChannels(cfg) {
     // Disconnect existing
     twitchConn.disconnect();
     kickConn.disconnect();
+    twitchStatus = "off";
+    kickStatus = "off";
 
     if (cfg.twitch_enabled && cfg.twitch_channel) {
+        twitchStatus = "connecting";
         twitchConn.connect(cfg.twitch_channel);
     }
 
     if (cfg.kick_enabled && cfg.kick_channel_slug) {
+        kickStatus = "connecting";
         kickConn.connect(cfg.kick_channel_slug, cfg.kick_chatroom_id);
     }
+
+    renderChannels();
 }
 
 // ---- Init ----
